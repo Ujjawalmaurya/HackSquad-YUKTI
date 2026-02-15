@@ -1,0 +1,15 @@
+node_modules/
+.env
+.DS_Store
+coverage/
+npm-debug.log
+logs/
+uploads/*
+!uploads/.gitkeep
+*.tif
+*.tiff
+
+# Mock ML Service & Verification Scripts
+mock_ml_service.js
+verify_flow.sh
+mock_uploads/

@@ -1,0 +1,8 @@
+{
+    "name": "hacksquad-yukti",
+    "private": true,
+    "workspaces": [
+        "frontend",
+        "backend"
+    ]
+}
