@@ -1,4 +1,4 @@
-# Hyperspace 🚀
+# AI Scout 🚀
 
 AI Scout is a precision agriculture platform that uses AI and drone imagery to help farmers monitor field health. It combines YOLOv8 object detection and NDVI analysis to find diseases and predict yields in real-time.
 
@@ -20,13 +20,13 @@ AI Scout is a precision agriculture platform that uses AI and drone imagery to h
 
 The easiest way to run everything is using **Docker Compose**.
 
-### Launch the Stack
+<!-- ### Launch the Stack
 
 Run this command in the root folder:
 
 ```bash
 docker compose up --build
-```
+``` -->
 
 ---
 
@@ -41,20 +41,20 @@ If you prefer to run services manually without Docker:
 3. Configure `.env` (use `.env.example` as a template).
 4. Run: `npm run dev`.
 
-### 2. ML Service
 
-1. Go to `ml_service/`.
-2. Setup venv: `python -m venv venv` and activate it.
-3. Install: `pip install -r requirements.txt`.
-4. Run: `python main.py`.
-   _(Note: Use Docker if your Python version is > 3.12 to avoid build issues)_
-
-### 3. Frontend
+### 2. Frontend
 
 1. Go to `frontend/`.
 2. Install: `npm install`.
 3. Run: `npm run dev`.
 
+<!-- ### 3. ML Service
+
+1. Go to `ml_service/`.
+2. Setup venv: `python -m venv venv` and activate it.
+3. Install: `pip install -r requirements.txt`.
+4. Run: `python main.py`.
+   _(Note: Use Docker if your Python version is > 3.12 to avoid build issues)_ -->
 ---
 
 ## 🎨 Running Frontend Alone (Standalone)
@@ -66,7 +66,7 @@ If you only want the UI with mock data:
 
 ---
 
-## 🚁 Drone Connectivity
+<!-- ## 🚁 Drone Connectivity
 
 To connect a drone:
 
@@ -74,13 +74,13 @@ To connect a drone:
 2. Click **Connect** on the DJI or Satellite Hub option.
 3. Access the **Launch Analysis** command center in the Navbar to begin uploading flight imagery.
 
----
+--- -->
 
 ## 🏗️ Technology Stack
 
 - **Frontend**: Next.js 16, React 19, Tailwind CSS.
 - **Backend**: Node.js, Express, MongoDB.
-- **ML Service**: Python 3.9, FastAPI, YOLOv8.
+<!-- - **ML Service**: Python 3.9, FastAPI, YOLOv8. -->
 
 ---
 
