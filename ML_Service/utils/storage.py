@@ -75,11 +75,13 @@ def save_analysis_results(images, detections_list, batch_id=None):
             "input": filename,
             "result_url": result_url,
             "meta_url": meta_url,
+            "detections": detections,  # Include full detections for backend processing
             "detections_count": len(detections)
         })
         
     return {
         "batch_id": batch_id,
         "base_path": f"/storage/analysis/{batch_id}",
-        "images": saved_results
+        "dataset_metadata": { "timestamp": datetime.now().isoformat() }, 
+        "results": saved_results # Changed key to results to match backend expectation if needed, or keep as images
     }

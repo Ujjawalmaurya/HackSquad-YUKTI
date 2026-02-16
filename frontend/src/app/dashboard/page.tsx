@@ -29,29 +29,20 @@ export default function Dashboard() {
     const [weather, setWeather] = useState<{ temp: number; description: string } | null>(null);
 
     useEffect(() => {
-        const loadData = async () => { // Renamed loadStats to loadData
+        const loadData = async () => {
             try {
                 // Fetch real vegetation reports
                 const reportsData = await fetchVegetationReports();
                 setReports(reportsData);
 
-                // Calculate aggregate stats from real data
-                if (reportsData.length > 0) {
-                    const totalNdvi = reportsData.reduce((acc: number, curr: any) => acc + (curr.ndvi?.stats?.mean || 0), 0);
-                    const avgNdvi = (totalNdvi / reportsData.length).toFixed(2);
+                // Fetch aggregate stats from backend (includes Smart Warning logic)
+                const statsData = await fetchStats();
 
-                    const criticalCount = reportsData.filter((r: any) => r.aiInsights?.healthScore < 50).length;
-
+                if (statsData) {
                     setStats({
-                        avgNDVI: avgNdvi,
-                        totalArea: (reportsData.length * 12.5).toFixed(1), // Mock area per report for now
-                        activeAlerts: criticalCount
-                    });
-                } else {
-                    setStats({
-                        avgNDVI: "0.00",
-                        totalArea: "0.0",
-                        activeAlerts: 0
+                        avgNDVI: statsData.avgNDVI || "0.00",
+                        totalArea: statsData.totalArea || "0.0",
+                        activeAlerts: statsData.activeAlerts || 0
                     });
                 }
             } catch (error) {
@@ -199,9 +190,9 @@ export default function Dashboard() {
                         trend={{ value: "+12%", isUp: true }}
                     />
                     <DashboardCard
-                        title="Critical Zones"
-                        value={stats?.activeAlerts > 0 ? "High Risk" : "Stable"}
-                        subtext={`${stats?.activeAlerts || 0} alerts`}
+                        title="Smart Warning"
+                        value={stats?.activeAlerts > 0 ? "Critical" : "Monitor"}
+                        subtext={`${stats?.activeAlerts || 0} active alerts`}
                         icon={Zap}
                     />
                 </motion.div>

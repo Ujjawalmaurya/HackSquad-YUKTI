@@ -93,7 +93,7 @@ async def analyze_v2(files: List[UploadFile] = File(...), conf_threshold: float 
         "status": "success",
         "batch_id": storage_result["batch_id"],
         "base_path": storage_result["base_path"],
-        "results": storage_result["images"]
+        "results": storage_result["results"]
     }
 
 @router.get("/analyze-v2/{batch_id}")

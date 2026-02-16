@@ -13,6 +13,7 @@ const farmSchema = new mongoose.Schema({
         date: { type: Date, default: Date.now },
         ndvi: Number,
         healthStatus: String,
+        smartStatus: String, // 'Critical' or 'Monitor'
         diseaseDetected: Boolean,
         detections: [{
             label: String,

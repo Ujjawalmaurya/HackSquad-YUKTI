@@ -5,6 +5,8 @@ const { calculateStats, calculateGrid } = require('../processors/vegetation/stat
 // Removed generateVegetationGrid import as we use real data now
 const { generateFarmAnalysis } = require('../utils/gemini'); // Import explicitly at top
 const Farm = require('../models/Farm');
+const Alert = require('../models/Alert');
+const { generateAlertsForVegetation } = require('../services/alertService');
 
 async function processSingleFile(file, userId, farmId) {
     const filePath = file.path;
@@ -90,6 +92,16 @@ async function processSingleFile(file, userId, farmId) {
 
         await report.save();
         console.log(`[processSingleFile] Report saved successfully: ${report._id}`);
+
+        // ... existing code ...
+
+        // --- Alert Generation (Vegetation) ---
+        try {
+            await generateAlertsForVegetation(report);
+            console.log(`[processSingleFile] Alert generation trigger complete for report ${report._id}`);
+        } catch (alertErr) {
+            console.error("[processSingleFile] Error generating vegetation alerts:", alertErr);
+        }
 
         // 6. Update Farm History
         if (farmId) {

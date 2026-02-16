@@ -43,6 +43,7 @@ export default function Navbar() {
                                 <Link href="/maps" className="text-foreground/80 hover:text-primary px-3 py-2 text-sm font-medium transition-colors">{t('maps')}</Link>
                                 <Link href="/analytics" className="text-foreground/80 hover:text-primary px-3 py-2 text-sm font-medium transition-colors">{t('analytics')}</Link>
                                 <Link href="/reports" className="text-foreground/80 hover:text-primary px-3 py-2 text-sm font-medium transition-colors">{t('reports')}</Link>
+                                <Link href="/alerts" className="text-foreground/80 hover:text-primary px-3 py-2 text-sm font-medium transition-colors">{t('notifications')}</Link>
                             </div>
                         </div>
                     )}

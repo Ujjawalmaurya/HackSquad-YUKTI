@@ -8,6 +8,7 @@ const FormData = require('form-data');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const Farm = require('../models/Farm');
 const Report = require('../models/Report');
+const Alert = require('../models/Alert');
 const authenticateToken = require('../middleware/auth');
 
 const ML_SERVICE_URL = process.env.ML_SERVICE_URL;
@@ -63,6 +64,7 @@ router.post('/analyze', authenticateToken, upload.single('image'), async (req, r
             const results = {
                 ndvi: mlData.ndvi,
                 healthStatus: mlData.ndvi > 0.6 ? 'Optimal Health' : mlData.ndvi > 0.3 ? 'Moderate Stress' : 'Critical Anomaly',
+                smartStatus: (mlData.ndvi < 0.4 && mlData.disease_detected) ? 'Critical' : 'Monitor',
                 diseaseDetected: mlData.disease_detected,
                 detections: mlData.detections,
                 yieldPrediction: mlData.yield_prediction,
@@ -92,6 +94,7 @@ router.post('/analyze', authenticateToken, upload.single('image'), async (req, r
                 detections: [],
                 yieldPrediction: 10.5,
                 recommendations: ['Check system connectivity'],
+                smartStatus: 'Monitor',
                 imageUrl,
                 metadata: { weather: 'Unknown', engine: 'Fallback' }
             };
@@ -264,6 +267,14 @@ router.post('/analyze-v2', authenticateToken, upload.array('files'), async (req,
         });
 
         await report.save();
+
+        // --- Alert Generation ---
+        try {
+            await generateAlertsForAnalysis(report);
+            console.log(`[Analyze-v2] Alert generation trigger complete for report ${report._id}`);
+        } catch (alertErr) {
+            console.error("Error generating alerts:", alertErr);
+        }
 
         res.json({
             ...mlData,

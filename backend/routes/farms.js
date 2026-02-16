@@ -38,7 +38,12 @@ router.get('/stats', authenticateToken, async (req, res) => {
                 const latest = f.analysisHistory[f.analysisHistory.length - 1];
                 avgNDVI += latest.ndvi || 0;
                 analysisCount++;
-                if (latest.diseaseDetected) alertCount++;
+
+                // Smart Warning Logic: Count as alert if status is Critical
+                // Use smartStatus if available, else fallback to diseaseDetected for backward compatibility
+                if (latest.smartStatus === 'Critical' || (latest.smartStatus === undefined && latest.diseaseDetected)) {
+                    alertCount++;
+                }
             }
         });
 

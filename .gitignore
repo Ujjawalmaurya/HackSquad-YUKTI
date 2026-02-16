@@ -3,3 +3,4 @@ AUTHENTICATION.md
 docs
 /samples
 /backend/storage/
+*.log
