@@ -183,16 +183,21 @@ export default function MapsPage() {
                             // let borderColor = 'border-white/0'; // Removing border for smoother look
 
                             // Color Scale Logic
-                            if (activeLayer === 'ndvi' || activeLayer === 'gndvi' || activeLayer === 'savi') {
-                                if (zoneValue > 0.7) spectralFilter = `bg-green-500 hover:bg-green-400`;
-                                else if (zoneValue > 0.5) spectralFilter = `bg-green-500/60 hover:bg-green-500/80`;
-                                else if (zoneValue > 0.3) spectralFilter = `bg-yellow-500/60 hover:bg-yellow-500/80`;
-                                else if (zoneValue > 0.1) spectralFilter = `bg-orange-500/60 hover:bg-orange-500/80`;
+                            if (activeLayer === 'pest') {
+                                // Pest Rist: Low NDVI = High Risk (Red)
+                                // We treat zoneValue as NDVI here.
+                                if (zoneValue < 0.2) spectralFilter = 'bg-red-600/80 animate-pulse'; // Critical
+                                else if (zoneValue < 0.4) spectralFilter = 'bg-orange-500/60'; // High
+                                else if (zoneValue < 0.6) spectralFilter = 'bg-yellow-500/40'; // Medium
+                                else spectralFilter = 'bg-transparent'; // Low/Safe
+                            } else {
+                                // Standard Indices (-1 to 1 usually, assuming 0-1 normalized for grid or raw)
+                                // If raw -1 to 1:
+                                if (zoneValue > 0.6) spectralFilter = `bg-green-500 hover:bg-green-400`;
+                                else if (zoneValue > 0.4) spectralFilter = `bg-green-500/60 hover:bg-green-500/80`;
+                                else if (zoneValue > 0.2) spectralFilter = `bg-yellow-500/60 hover:bg-yellow-500/80`;
+                                else if (zoneValue > 0) spectralFilter = `bg-orange-500/60 hover:bg-orange-500/80`;
                                 else spectralFilter = `bg-red-500/60 hover:bg-red-500/80`;
-                            } else if (activeLayer === 'pest') {
-                                // Invert logic for pest: low health = high pest risk
-                                if (zoneValue < 0.3) spectralFilter = 'bg-red-600/60 animate-pulse';
-                                else spectralFilter = 'bg-transparent';
                             }
 
                             // Ortho Background (Only visible if transparency allows)
@@ -209,7 +214,7 @@ export default function MapsPage() {
                                     {/* Color Overlay */}
                                     <div
                                         className={`absolute inset-0 transition-opacity duration-300 ${spectralFilter}`}
-                                        style={{ opacity: activeLayer === 'pest' ? 0.6 : (overlayOpacity / 100) }} // Adjust opacity based on slider
+                                        style={{ opacity: activeLayer === 'pest' ? 0.7 : (overlayOpacity / 100) }} // Adjust opacity based on slider
                                     />
 
                                     {/* Debug/Tooltip on Hover */}
@@ -262,43 +267,103 @@ export default function MapsPage() {
                         </div>
                     </div>
 
-                    {/* Simple Histogram Visualization */}
+                    {/* Histogram Visualization */}
                     <div className="glass rounded-2xl p-4 border border-white/5">
                         <h3 className="text-xs font-bold mb-3 uppercase tracking-wider text-muted">Distribution</h3>
                         <div className="flex items-end h-24 gap-1">
-                            {/* Create a simple distribution from grid data */}
-                            {[0, 0.2, 0.4, 0.6, 0.8].map((range, idx) => {
-                                const count = currentGrid?.filter((v: number) => v >= range && v < range + 0.2).length || 0;
-                                const maxCount = currentGrid?.length || 1;
-                                const height = (count / maxCount) * 100;
-                                return (
-                                    <div key={idx} className="flex-1 flex flex-col justify-end group/bar">
-                                        <div
-                                            className="w-full bg-primary/20 border-t border-primary/50 hover:bg-primary transition-all rounded-t-sm relative"
-                                            style={{ height: `${Math.max(height * 4, 5)}%` }} // Scaling up for visibility
-                                        >
-                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 text-[8px] opacity-0 group-hover/bar:opacity-100">{count}</div>
+                            {(() => {
+                                const isPest = activeLayer === 'pest';
+                                // Ranges for indices usually -1 to 1. For Pest, we visualize Risk 0-1.
+                                const ranges = isPest
+                                    ? [0, 0.2, 0.4, 0.6, 0.8] // Risk Probability
+                                    : [-1, -0.5, 0, 0.5, 1.0]; // Index Values
+
+                                return ranges.map((range, idx) => {
+                                    // Count logic
+                                    const count = (currentGrid || []).filter((v: number) => {
+                                        const val = isPest ? (1 - v) : v; // Invert NDVI for pest risk (Low NDVI = High Risk)
+                                        return val >= range && val < (isPest ? range + 0.2 : range + 0.5);
+                                    }).length || 0;
+
+                                    const maxCount = (currentGrid || []).length || 1;
+                                    const height = Math.min((count / maxCount) * 100 * 3, 100); // Scale up
+
+                                    let barColor = 'bg-primary/20 border-primary/50';
+                                    if (isPest) {
+                                        // High risk (right side) should be red
+                                        if (idx >= 3) barColor = 'bg-red-500/50 border-red-500';
+                                        else barColor = 'bg-green-500/50 border-green-500';
+                                    } else {
+                                        // Standard Index: Low (left) is bad/red, High (right) is good/green
+                                        if (idx < 2) barColor = 'bg-red-500/50 border-red-500';
+                                        else barColor = 'bg-green-500/50 border-green-500';
+                                    }
+
+                                    return (
+                                        <div key={idx} className="flex-1 flex flex-col justify-end group/bar">
+                                            <div
+                                                className={`w-full border-t hover:brightness-125 transition-all rounded-sm relative ${barColor}`}
+                                                style={{ height: `${Math.max(height, 5)}%` }}
+                                            >
+                                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 text-[8px] opacity-0 group-hover/bar:opacity-100">{count}</div>
+                                            </div>
                                         </div>
-                                    </div>
-                                )
-                            })}
+                                    )
+                                });
+                            })()}
                         </div>
                         <div className="flex justify-between text-[8px] text-muted mt-2 border-t border-white/5 pt-1">
-                            <span>0.0</span>
-                            <span>0.5</span>
-                            <span>1.0</span>
+                            {activeLayer === 'pest' ? (
+                                <><span>Low Risk</span><span>Med</span><span>High Risk</span></>
+                            ) : (
+                                <><span>-1.0</span><span>0.0</span><span>1.0</span></>
+                            )}
                         </div>
                     </div>
 
-                    <div className="glass rounded-2xl p-4 border border-white/5 flex-1">
-                        <h3 className="text-xs font-bold mb-3 uppercase tracking-wider text-muted">AI Insights</h3>
-                        <div className="space-y-3">
+                    <div className="glass rounded-2xl p-4 border border-white/5 flex-1 flex flex-col">
+                        <h3 className="text-xs font-bold mb-3 uppercase tracking-wider text-muted flex justify-between">
+                            AI Insights
+                            {activeReport?.aiInsights?.healthScore > 0 && (
+                                <span className={`px-2 py-0.5 rounded text-[10px] ${activeReport.aiInsights.healthScore > 75 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                                    Score: {activeReport.aiInsights.healthScore}
+                                </span>
+                            )}
+                        </h3>
+
+                        <div className="space-y-4 flex-1 overflow-y-auto custom-scrollbar">
+                            {/* General Summary */}
                             <div className="flex items-start gap-3">
                                 <div className="w-1.5 h-1.5 rounded-full bg-accent mt-1.5 shrink-0" />
-                                <p className="text-xs text-foreground/80 leading-relaxed">
-                                    {activeReport?.aiInsights?.summary || "Select a report to view insights."}
+                                <p className="text-xs text-foreground/80 leading-relaxed italic">
+                                    "{activeReport?.aiInsights?.summary || "Analysis pending..."}"
                                 </p>
                             </div>
+
+                            {/* Specific Layer Insight */}
+                            {activeReport?.aiInsights?.indexAnalysis?.[activeLayer] && (
+                                <div className="bg-white/5 p-3 rounded-xl border border-white/5">
+                                    <h4 className="text-[10px] uppercase font-bold text-primary mb-1">{activeLayer.toUpperCase()} Analysis</h4>
+                                    <p className="text-xs text-foreground/70">
+                                        {activeReport.aiInsights.indexAnalysis[activeLayer]}
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Focus Areas */}
+                            {activeReport?.aiInsights?.focusAreas?.length > 0 && (
+                                <div>
+                                    <h4 className="text-[10px] uppercase font-bold text-muted mb-2">Focus Areas</h4>
+                                    <ul className="space-y-1">
+                                        {activeReport.aiInsights.focusAreas.slice(0, 3).map((area: string, i: number) => (
+                                            <li key={i} className="text-xs text-foreground/60 flex items-center gap-2">
+                                                <span className="w-1 h-1 bg-red-400 rounded-full" />
+                                                {area}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
                         </div>
 
                         {activeReport?.detailedReport && (
@@ -319,18 +384,18 @@ export default function MapsPage() {
                     <h3 className="text-[10px] font-bold mb-3 text-foreground flex items-center gap-2 uppercase tracking-widest">
                         Map Controls
                     </h3>
-                    
+
                     {/* Transparency Slider */}
                     <div className="mb-4">
                         <div className="flex justify-between text-[10px] uppercase font-bold text-muted mb-1">
                             <span>Overlay Opacity</span>
                             <span>{overlayOpacity}%</span>
                         </div>
-                        <input 
-                            type="range" 
-                            min="0" 
-                            max="100" 
-                            value={overlayOpacity} 
+                        <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            value={overlayOpacity}
                             onChange={(e) => setOverlayOpacity(parseInt(e.target.value))}
                             className="w-full h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-primary"
                         />
