@@ -13,7 +13,7 @@ const authenticateToken = require('../middleware/auth');
 const ML_SERVICE_URL = process.env.ML_SERVICE_URL;
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
 
 const uploadDir = 'uploads';
 if (!fs.existsSync(uploadDir)) {
@@ -188,6 +188,118 @@ router.post('/analyze-batch', authenticateToken, upload.array('files'), async (r
             });
         }
         res.status(500).json({ error: error.message || 'Analysis failed' });
+    }
+});
+
+
+router.post('/analyze-v2', authenticateToken, upload.array('files'), async (req, res) => {
+    try {
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ error: 'No images uploaded' });
+        }
+
+        const formData = new FormData();
+        req.files.forEach(file => {
+            const fileBuffer = fs.readFileSync(file.path);
+            formData.append('files', fileBuffer, file.originalname);
+        });
+
+        const confThreshold = req.query.conf_threshold || 0.25;
+
+        const mlResponse = await axios.post(`${ML_SERVICE_URL}/analyze-v2`, formData, {
+            headers: { ...formData.getHeaders() },
+            params: { conf_threshold: confThreshold }
+        });
+
+        // Cleanup uploaded files
+        req.files.forEach(file => {
+            if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+        });
+
+        const mlData = mlResponse.data;
+
+        const reportPrompt = `
+        You are an agricultural expert. Analyze these YOLOv8 detection results:
+        ${JSON.stringify(mlData, null, 2)}
+
+        Write a clear, simple report for a farmer. Avoid technical jargon.
+        
+        Structure:
+        ## 1. Summary
+        - Direct overview of what was found.
+        - Overall health status.
+
+        ## 2. Findings
+        - Break down significant detections per image.
+        - Highlight high-confidence detections (>0.6).
+        - **MANDATORY**: Embed the image for each finding.
+        - **REQUIRED FORMAT**: \`<img src="[URL]" width="400" alt="Analysis Result" />\`
+        - Use the URL from \`results[i].result_url\`.
+        - Example: \`<img src="/storage/analysis/..." width="400" />\`
+
+        ## 3. Recommendations
+        - Simple, actionable advice (organic and chemical options).
+        - What to do next.
+
+        ## 4. Urgency
+        - Low, Medium, or High.
+
+        Keep it concise and helpful.
+        `;
+
+        let reportMarkdown = "Report generation failed.";
+        try {
+            const geminiResult = await model.generateContent(reportPrompt);
+            reportMarkdown = geminiResult.response.text();
+        } catch (genError) {
+            console.error("Gemini Generation Error:", genError.message);
+            reportMarkdown = `## Analysis Complete\n\n**Note:** AI Report generation unavailable.\n\nRaw Data:\n\`\`\`json\n${JSON.stringify(mlData, null, 2)}\n\`\`\``;
+        }
+
+        // --- Save Report to MongoDB ---
+        const report = new Report({
+            content: reportMarkdown,
+            mlResults: mlData,
+            images: mlData.results.map(r => r.result_url) // Use the result URLs provided by ML Service
+        });
+
+        await report.save();
+
+        res.json({
+            ...mlData,
+            report: reportMarkdown,
+            reportId: report._id
+        });
+
+    } catch (error) {
+        console.error('Analyze V2 Error:', error.message);
+        // Cleanup on error
+        if (req.files) {
+            req.files.forEach(file => {
+                if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+            });
+        }
+
+        if (error.response) {
+            res.status(error.response.status).json(error.response.data);
+        } else {
+            res.status(500).json({ error: error.message || 'Analysis failed' });
+        }
+    }
+});
+
+router.get('/analyze-v2/:batchId', authenticateToken, async (req, res) => {
+    try {
+        const { batchId } = req.params;
+        const mlResponse = await axios.get(`${ML_SERVICE_URL}/analyze-v2/${batchId}`);
+        res.json(mlResponse.data);
+    } catch (error) {
+        console.error('Analyze V2 Get Error:', error.message);
+        if (error.response) {
+            res.status(error.response.status).json(error.response.data);
+        } else {
+            res.status(500).json({ error: error.message });
+        }
     }
 });
 

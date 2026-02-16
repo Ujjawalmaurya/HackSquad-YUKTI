@@ -1,3 +1,5 @@
 node_modules
 AUTHENTICATION.md 
 docs
+/samples
+/backend/storage/

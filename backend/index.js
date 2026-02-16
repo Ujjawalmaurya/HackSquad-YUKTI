@@ -18,6 +18,7 @@ app.use(helmet({
 }));
 app.use(morgan('dev'));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/storage', express.static(path.join(__dirname, 'storage')));
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));

@@ -1,4 +1,4 @@
-#!/bin/bash
+~#!/bin/bash
 # verify_backend.sh
 
 echo "1. Fetching Farms..."

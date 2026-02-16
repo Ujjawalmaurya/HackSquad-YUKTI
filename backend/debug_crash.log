@@ -1,0 +1,7 @@
+nohup: ignoring input
+[dotenv@17.3.1] injecting env (6) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+Connected to MongoDB
+Server running on port 5000
+[0mPOST /api/auth/login [32m200[0m 321.969 ms - 422[0m
+[0mPOST /api/analysis/analyze-v2 [32m200[0m 7235.298 ms - 2401[0m

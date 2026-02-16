@@ -12,6 +12,10 @@ Base URL: `http://localhost:5000`
 - **Response:**
   - `200 OK`: "API is running..."
 
+### Static Files
+- **Uploads:** `/uploads/filename`
+- **Analysis Results:** `/storage/analysis/{batch_id}/filename`
+
 ---
 
 ## Authentication (`/api/auth`)
@@ -82,6 +86,18 @@ Base URL: `http://localhost:5000`
 - **Method:** `POST`
 - **Description:** Uploads multiple images, gets ML data, and generates a Gemini AI report.
 - **Body:** `multipart/form-data` with multiple `files`.
+
+### Precision Analysis (YOLOv8)
+- **URL:** `/analyze-v2`
+- **Method:** `POST`
+- **Description:** High-precision analysis with strict visualization.
+- **Body:** `multipart/form-data` with `files`.
+- **Query Params:** `conf_threshold` (default 0.25).
+
+### Get Precision Analysis Results
+- **URL:** `/analyze-v2/:batchId`
+- **Method:** `GET`
+- **Description:** Retrieve results of a previous batch.
 
 ---
 

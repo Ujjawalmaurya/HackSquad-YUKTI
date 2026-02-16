@@ -1,0 +1,23 @@
+nohup: ignoring input
+[dotenv@17.3.1] injecting env (6) from .env -- tip: 🤖 agentic secret storage: https://dotenvx.com/as2
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+Connected to MongoDB
+Server running on port 5000
+[0mPOST /api/auth/login [32m200[0m 191.394 ms - 422[0m
+[0mPOST /api/analysis/analyze-v2 [32m200[0m 7263.730 ms - 1977[0m
+[0mPOST /api/analysis/analyze-v2 [32m200[0m 12686.613 ms - 5896[0m
+[0mGET /api/vegetation [36m304[0m 116.666 ms - -[0m
+[0mGET /api/vegetation [36m304[0m 53.429 ms - -[0m
+[0mPOST /api/analysis/analyze-v2 [32m200[0m 11970.686 ms - 6035[0m
+[0mPOST /api/auth/login [32m200[0m 130.428 ms - 422[0m
+[0mGET /api/reports [32m200[0m 51.847 ms - 6354[0m
+[0mGET /api/reports [36m304[0m 51.843 ms - -[0m
+[0mPOST /api/analysis/analyze-v2 [32m200[0m 6676.177 ms - 2247[0m
+[0mGET /api/vegetation [36m304[0m 101.769 ms - -[0m
+[0mGET /api/vegetation [36m304[0m 49.963 ms - -[0m
+[0mGET /api/reports [32m200[0m 78.361 ms - 8736[0m
+[0mGET /api/reports [36m304[0m 54.433 ms - -[0m
+[0mGET /storage/analysis/d789d18b_20260216_131134/test_image_boxed.jpg [32m200[0m 4.988 ms - 823[0m
+[0mGET /storage/analysis/ad3be869_20260216_131121/photo_4_2026-02-16_11-27-45_boxed.jpg [32m200[0m 3.402 ms - 67861[0m
+[0mGET /storage/analysis/ad3be869_20260216_131121/photo_7_2026-02-16_11-27-45_boxed.jpg [32m200[0m 2.115 ms - 186263[0m
+[0mGET /storage/analysis/ad3be869_20260216_131121/photo_3_2026-02-16_11-27-45_boxed.jpg [32m200[0m 1.812 ms - 353836[0m

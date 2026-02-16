@@ -1,0 +1,54 @@
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+env/
+ENV/
+.env
+
+# Models
+*.pt
+*.pth
+*.onnx
+*.h5
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Datasets
+datasets/
+/data_layer/processed/*
+*.zip
+
+# YOLO Training Outputs
+runs/
+hyperbrain_run/
+
+# Cache files
+*.cache
+
+# Custom Model Directories
+yolov8_classification_best_accuracy/
+
+# Temporary Scripts & Artifacts
+inspect_image.py
+inspect_model.py
+model_classes.txt
+dummy_multispectral.tif
+test_image.jpg
+
+# Image Data
+*.tif
+*.tiff
+ms-images/*
