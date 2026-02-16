@@ -29,6 +29,7 @@ export default function MapsPage() {
     const [loading, setLoading] = useState(true);
     const [activeLayer, setActiveLayer] = useState('ndvi');
     const [hoveredZone, setHoveredZone] = useState<number | null>(null);
+    const [overlayOpacity, setOverlayOpacity] = useState(60); // Default 60% opacity
 
     useEffect(() => {
         const load = async () => {
@@ -208,7 +209,7 @@ export default function MapsPage() {
                                     {/* Color Overlay */}
                                     <div
                                         className={`absolute inset-0 transition-opacity duration-300 ${spectralFilter}`}
-                                        style={{ opacity: activeLayer === 'pest' ? 0.6 : 0.4 }} // Adjust opacity to see underlying "image"
+                                        style={{ opacity: activeLayer === 'pest' ? 0.6 : (overlayOpacity / 100) }} // Adjust opacity based on slider
                                     />
 
                                     {/* Debug/Tooltip on Hover */}
@@ -315,10 +316,28 @@ export default function MapsPage() {
                 <div className="absolute left-6 top-1/2 -translate-y-1/2 flex flex-col gap-2 pointer-events-none"> {/* Moved controls to ensure they don't block grid if needed, presently inactive/visual */} </div>
 
                 <div className="absolute bottom-6 left-6 glass p-4 rounded-[1rem] border border-border/50 max-w-sm shadow-2xl z-20 pointer-events-auto">
-                    <h3 className="text-[10px] font-bold mb-2 text-foreground flex items-center gap-2 uppercase tracking-widest">
-                        Legend
+                    <h3 className="text-[10px] font-bold mb-3 text-foreground flex items-center gap-2 uppercase tracking-widest">
+                        Map Controls
                     </h3>
-                    <div className="space-y-1.5">
+                    
+                    {/* Transparency Slider */}
+                    <div className="mb-4">
+                        <div className="flex justify-between text-[10px] uppercase font-bold text-muted mb-1">
+                            <span>Overlay Opacity</span>
+                            <span>{overlayOpacity}%</span>
+                        </div>
+                        <input 
+                            type="range" 
+                            min="0" 
+                            max="100" 
+                            value={overlayOpacity} 
+                            onChange={(e) => setOverlayOpacity(parseInt(e.target.value))}
+                            className="w-full h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-primary"
+                        />
+                    </div>
+
+                    <div className="space-y-1.5 border-t border-white/5 pt-3">
+                        <h4 className="text-[10px] font-bold text-muted uppercase tracking-wider mb-2">Legend</h4>
                         <div className="flex items-center gap-2">
                             <div className="w-8 h-1.5 rounded-sm bg-gradient-to-r from-red-500 via-yellow-500 to-green-500" />
                             <span className="text-[10px] text-muted">NDVI Spectrum</span>
