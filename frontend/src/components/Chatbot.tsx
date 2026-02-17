@@ -25,7 +25,7 @@ export default function Chatbot() {
         {
             id: '1',
             role: 'assistant',
-            content: "Hello! I am your Sky Scouts AI assistant. I can help you monitor crop health, analyze NDVI maps, or schedule drone missions. What's on your mind today?",
+            content: "Hello! I am your farm helper. How are your plants today? I can help you with seeds, water, and medicine for your field.",
             timestamp: new Date(),
             type: 'text',
             actions: [
@@ -289,7 +289,7 @@ export default function Chatbot() {
                 whileHover={{ scale: 1.1, rotate: 5 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={() => setIsOpen(!isOpen)}
-                className="fixed bottom-6 right-6 w-16 h-16 bg-primary text-black rounded-2xl shadow-2xl shadow-primary/30 flex items-center justify-center z-50 group border border-white/20 transition-all duration-300"
+                className="fixed bottom-6 right-6 w-16 h-16 bg-primary text-black rounded-2xl shadow-2xl shadow-primary/40 flex items-center justify-center z-[200] group border-2 border-white/20 hover:border-white/40 transition-all duration-300"
             >
                 {isOpen ? (
                     <X className="w-8 h-8" />

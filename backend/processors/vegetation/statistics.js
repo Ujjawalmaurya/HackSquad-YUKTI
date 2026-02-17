@@ -79,7 +79,7 @@ function calculateGrid(raster, width, height, gridSize = 20) {
     // Average the values
     const result = [];
     for (let i = 0; i < grid.length; i++) {
-        result.push(counts[i] > 0 ? Number((grid[i] / counts[i]).toFixed(3)) : 0);
+        result.push(counts[i] > 0 ? Number((grid[i] / counts[i]).toFixed(3)) : null);
     }
 
     return result;

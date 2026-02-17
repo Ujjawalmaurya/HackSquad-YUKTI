@@ -14,35 +14,36 @@ const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
  */
 async function generateFarmAnalysis(allStats) {
     const prompt = `
-    You are an expert agronomist and precision agriculture specialist.
-    Analyze the following vegetation index statistics for a farm field:
+    You are a helpful neighbor who knows alot about farming. Talk to the farmer in very simple words that anyone can understand. DO NOT use big words or computer-talk.
 
+    Look at these numbers from the farm scan:
     ${Object.entries(allStats).map(([key, val]) => `
     - ${key.toUpperCase()}:
-      Mean: ${val?.mean?.toFixed(3) || 'N/A'}
-      Min: ${val?.min?.toFixed(3) || 'N/A'}
-      Max: ${val?.max?.toFixed(3) || 'N/A'}
-      StdDev: ${val?.stdDev?.toFixed(3) || 'N/A'}
-      Healthy %: ${val?.healthyPercentage?.toFixed(1) || 'N/A'}%
+      Average: ${val?.mean?.toFixed(3) || 'N/A'}
+      Health %: ${val?.healthyPercentage?.toFixed(1) || 'N/A'}%
     `).join('\n')}
 
-    Provide a comprehensive status report in JSON format with the following structure:
+    Write a simple report in JSON format:
     {
-        "healthScore": 0-100 (Overall field health score based on all metrics),
-        "summary": "2-3 sentences summarizing the field status, identifying key stress types (water vs nitrogen etc)",
-        "recommendations": ["Actionable advice 1", "Actionable advice 2", "Actionable advice 3"],
+        "healthScore": 0-100,
+        "summary": "1-2 very simple sentences. Like 'Your plants look hungry' or 'The field is very dry'.",
+        "recommendations": [
+            "Clear advice like: Give 50kg Urea to this field",
+            "Clear advice like: Water the field for 2 hours today",
+            "Clear advice like: Spray medicine for bugs tomorrow"
+        ],
         "indexAnalysis": {
-            "ndvi": "Specific insight derived from NDVI...",
-            "gndvi": "Specific insight derived from GNDVI (e.g., relating to chlorophyll/nitrogen)...",
-            "ndre": "Insight on early stress detection...",
-            "savi": "Insight on soil background influence...",
-            "osavi": "Insight on canopy structures..."
+            "ndvi": "Simple growth update...",
+            "gndvi": "Simple color/food update...",
+            "ndre": "Simple health check...",
+            "savi": "Simple soil update...",
+            "osavi": "Simple plant check..."
         },
-        "focusAreas": ["North-East sector for irrigation", "Central zone for pest check", etc (Infer from stats variance)],
-        "detailedMarkdownReport": "A rich, human-readable, naturally written report in Markdown format. Things should be straight to the point without jargon. Include sections for: Executive Summary, Detailed Findings, Trend Analysis, Recommended Actions, and Urgency Levels. Make it engaging."
+        "focusAreas": ["The corner near the tree needs more water", "The middle part needs Urea"],
+        "detailedMarkdownReport": "# Farm Update Today \\n\\n## What we found \\nUse very simple words. No jargon. \\n\\n## What to do \\n- Give Urea: How much \\n- Give Water: How long \\n- Give Medicine: Which one"
     }
-
-    Return ONLY valid JSON. No markdown in the top-level response (the detailedMarkdownReport field itself should contain the markdown string).
+    
+    Return ONLY valid JSON.
     `;
 
     try {
@@ -60,6 +61,11 @@ async function generateFarmAnalysis(allStats) {
             focusAreas: []
         };
     }
+}
+
+// Fallback for missing Gemini API Key or other init errors
+if (!process.env.GEMINI_API_KEY) {
+    console.warn("GEMINI_API_KEY not found. AI features will be disabled.");
 }
 
 module.exports = { generateFarmAnalysis };

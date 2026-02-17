@@ -27,6 +27,7 @@ export default function Dashboard() {
     const [reports, setReports] = useState<any[]>([]); // Added reports state
     const [loading, setLoading] = useState(true);
     const [weather, setWeather] = useState<{ temp: number; description: string } | null>(null);
+    const [hoveredReportId, setHoveredReportId] = useState<string | null>(null);
 
     useEffect(() => {
         const loadData = async () => {
@@ -149,7 +150,7 @@ export default function Dashboard() {
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <motion.div variants={itemVariants} className="text-foreground">
                         <h1 className="text-4xl font-black tracking-tight">{t('overview')}</h1>
-                        <p className="text-muted font-medium">Real-time Vegetation Intelligence</p>
+                        <p className="text-muted font-medium">Live Field Health Updates</p>
                     </motion.div>
                     <div className="flex gap-3">
                         <div className="glass px-4 py-2 rounded-xl flex items-center gap-2 border border-border/50 text-foreground">
@@ -169,30 +170,30 @@ export default function Dashboard() {
 
                 <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 text-foreground">
                     <DashboardCard
-                        title="Avg. NDVI Index"
+                        title="Greenness Score"
                         value={stats?.avgNDVI || "0.00"}
-                        subtext={parseFloat(stats?.avgNDVI || "0") > 0.5 ? t('optimal') : t('moderate')}
+                        subtext={parseFloat(stats?.avgNDVI || "0") > 0.5 ? "Very Green" : "Needs Help"}
                         icon={Activity}
-                        trend={{ value: "+2.1%", isUp: true }}
+                        trend={{ value: "+2%", isUp: true }}
                     />
                     <DashboardCard
-                        title="Analyzed Files"
+                        title="Number of Scans"
                         value={reports.length.toString()}
-                        subtext="Total Scans"
+                        subtext="Total Times Checked"
                         icon={Droplets}
                         trend={{ value: "+5", isUp: true }}
                     />
                     <DashboardCard
-                        title="Est. Coverage"
+                        title="Field Size"
                         value={stats?.totalArea ? `${stats.totalArea} ha` : "0 ha"}
-                        subtext="Total Area"
+                        subtext="Total Ground Scanned"
                         icon={TrendingUp}
                         trend={{ value: "+12%", isUp: true }}
                     />
                     <DashboardCard
-                        title="Smart Warning"
-                        value={stats?.activeAlerts > 0 ? "Critical" : "Monitor"}
-                        subtext={`${stats?.activeAlerts || 0} active alerts`}
+                        title="Field Alert"
+                        value={stats?.activeAlerts > 0 ? "Critical" : "Safe"}
+                        subtext={`${stats?.activeAlerts || 0} sick parts`}
                         icon={Zap}
                     />
                 </motion.div>
@@ -218,7 +219,13 @@ export default function Dashboard() {
                                 <div className="text-center py-10 opacity-50">No analysis data available yet. Upload a file to begin.</div>
                             ) : (
                                 reports.map((report) => (
-                                    <div key={report._id} className="glass p-4 rounded-2xl border border-white/5 hover:border-primary/30 transition-all group/item cursor-pointer" onClick={() => router.push(`/maps?report=${report._id}`)}>
+                                    <div
+                                        key={report._id}
+                                        className="glass p-4 rounded-2xl border border-white/5 hover:border-primary/30 transition-all group/item cursor-pointer relative"
+                                        onMouseEnter={() => setHoveredReportId(report._id)}
+                                        onMouseLeave={() => setHoveredReportId(null)}
+                                        onClick={() => router.push(`/maps?report=${report._id}`)}
+                                    >
                                         <div className="flex justify-between items-start">
                                             <div className="flex items-center gap-4">
                                                 <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-black text-lg ${(report.aiInsights?.healthScore || 0) > 75 ? 'bg-green-500/20 text-green-400' :
@@ -241,6 +248,49 @@ export default function Dashboard() {
                                         <p className="mt-3 text-sm text-foreground/80 line-clamp-2">
                                             {report.aiInsights?.summary || "No summary available."}
                                         </p>
+
+                                        {/* AI Hover Insight Tooltip */}
+                                        <AnimatePresence>
+                                            {hoveredReportId === report._id && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                    exit={{ opacity: 0, y: 5, scale: 0.95 }}
+                                                    className="absolute left-0 right-0 -bottom-2 translate-y-full z-[100] p-4 glass border border-primary/30 rounded-2xl shadow-2xl pointer-events-none"
+                                                >
+                                                    <div className="flex items-center gap-2 mb-2 pb-2 border-b border-white/10">
+                                                        <Zap className="w-4 h-4 text-primary" />
+                                                        <span className="text-[10px] font-black uppercase tracking-widest text-primary">Live AI Diagnosis</span>
+                                                    </div>
+
+                                                    <div className="space-y-3">
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="text-[11px] font-bold text-muted">State:</span>
+                                                            <span className={`text-[11px] font-black px-2 py-0.5 rounded ${(report.aiInsights?.healthScore || 0) > 75 ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
+                                                                {(report.aiInsights?.healthScore || 0) > 75 ? 'OPTIMAL' : 'STRESSED'}
+                                                            </span>
+                                                        </div>
+
+                                                        <div>
+                                                            <span className="text-[10px] font-bold text-muted block mb-1">Recommended Solution:</span>
+                                                            <p className="text-xs text-foreground font-medium italic leading-relaxed">
+                                                                "{report.aiInsights?.recommendations?.[0] || "Continue monitoring for changes."}"
+                                                            </p>
+                                                        </div>
+
+                                                        <div className="flex items-center gap-2 pt-1">
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                                                            <span className="text-[9px] font-bold text-muted uppercase">Ready for full analysis in Maps</span>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Tooltip Arrow */}
+                                                    <div className="absolute top-0 left-10 -translate-y-full w-4 h-2 overflow-hidden">
+                                                        <div className="w-2 h-2 bg-card border-l border-t border-primary/30 rotate-45 translate-y-1 ml-1" />
+                                                    </div>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
                                     </div>
                                 ))
                             )}
