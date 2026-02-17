@@ -33,25 +33,20 @@ export default function AnalyticsPage() {
                 setReports(sorted);
 
                 if (sorted.length > 0) {
-                    // Aggregated Calculations
-                    const totalHealth = sorted.reduce((acc: number, r: any) => acc + (r.aiInsights?.healthScore || 0), 0);
-                    const avgHealth = totalHealth / sorted.length;
+                    const latest = sorted[sorted.length - 1];
+                    const avgHealth = latest.aiInsights?.healthScore || 0;
 
-                    // Estimate total unique area (sum of all reports * rough ha conversion)
-                    const totalArea = sorted.reduce((acc: number, r: any) => acc + ((r.ndvi?.grid?.length || 0) * 0.05), 0);
+                    // Calculate field-level stats from the latest 20x20 grid
+                    const grid = latest.ndvi?.grid || [];
+                    const healthyZones = grid.filter((val: number | null) => val !== null && val > 0.5).length;
+                    const totalScannedZones = grid.filter((val: number | null) => val !== null).length;
+                    const weakSpots = totalScannedZones - healthyZones;
+                    const steadyFieldPercentage = totalScannedZones > 0 ? (healthyZones / totalScannedZones) * 100 : 0;
 
-                    // Extract common recurring recommendations
-                    const allRecs = sorted.flatMap((r: any) => r.aiInsights?.recommendations || []);
-                    const recCounts = allRecs.reduce((acc: any, rec: string) => {
-                        acc[rec] = (acc[rec] || 0) + 1;
-                        return acc;
-                    }, {});
-                    const topSolutions = Object.entries(recCounts)
-                        .sort((a: any, b: any) => (b[1] as number) - (a[1] as number))
-                        .slice(0, 3)
-                        .map(e => e[0]);
+                    // Area calculation
+                    const totalArea = grid.filter((v: any) => v !== null).length * 0.05;
 
-                    // Determine Strategic Condition
+                    // Strategic Condition
                     let condition = 'Stable';
                     if (avgHealth > 75) condition = 'Excellent - High Yield Potential';
                     else if (avgHealth > 50) condition = 'Steady - Minor Interventions Required';
@@ -60,9 +55,11 @@ export default function AnalyticsPage() {
                     setStats({
                         avgHealth,
                         totalArea,
-                        criticalZones: sorted.filter((r: any) => (r.aiInsights?.healthScore || 0) < 40).length,
+                        criticalZones: weakSpots,
                         condition,
-                        topSolutions: topSolutions.length > 0 ? topSolutions : ["No critical trends detected yet."]
+                        topSolutions: latest.aiInsights?.recommendations?.length > 0
+                            ? latest.aiInsights.recommendations
+                            : ["No critical trends detected yet."]
                     });
                 }
             } catch (err) {
@@ -137,50 +134,6 @@ export default function AnalyticsPage() {
             </motion.div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Visual Trend Analysis */}
-                <div className="lg:col-span-2 glass rounded-[2.5rem] p-8 border border-border/50">
-                    <div className="flex justify-between items-center mb-10">
-                        <div>
-                            <h3 className="text-xl font-black flex items-center gap-3">
-                                <BarChart3 className="w-6 h-6 text-primary" />
-                                Your Growth Record
-                            </h3>
-                            <p className="text-sm text-muted">Is your field getting greener or dryer over time?</p>
-                        </div>
-                    </div>
-
-                    <div className="h-64 flex items-end justify-between gap-6 px-4 relative">
-                        {/* Threshold Line */}
-                        <div className="absolute left-0 right-0 top-1/2 border-t border-white/5 z-0" />
-
-                        {reports.length === 0 ? (
-                            <div className="w-full text-center text-muted font-bold">Awaiting historical data...</div>
-                        ) : (
-                            reports.map((report, i) => {
-                                const val = report.ndvi?.stats?.mean || 0;
-                                const heightPct = Math.min(Math.max((val / 1) * 100, 10), 100);
-
-                                return (
-                                    <div key={report._id} className="flex-1 group relative flex flex-col justify-end h-full z-10">
-                                        <motion.div
-                                            initial={{ height: 0 }}
-                                            animate={{ height: `${heightPct}%` }}
-                                            transition={{ duration: 1, ease: [0.33, 1, 0.68, 1], delay: i * 0.05 }}
-                                            className={`rounded-t-2xl transition-all relative group-hover:shadow-[0_0_30px_rgba(var(--primary-rgb),0.3)] ${val > 0.6 ? 'bg-primary' : val > 0.3 ? 'bg-yellow-500' : 'bg-red-500'
-                                                }`}
-                                        />
-                                        <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all">
-                                            <span className="text-[10px] font-black whitespace-nowrap bg-card border border-border px-2 py-1 rounded-lg">
-                                                {formatDate(report.processedDate)}
-                                            </span>
-                                        </div>
-                                    </div>
-                                );
-                            })
-                        )}
-                    </div>
-                </div>
-
                 {/* Tactical Solutions Panel */}
                 <div className="glass rounded-[2.5rem] p-8 border border-border/50">
                     <h3 className="text-xl font-black mb-8 flex items-center gap-3 text-accent">
@@ -211,6 +164,136 @@ export default function AnalyticsPage() {
                         ))}
                     </div>
                 </div>
+
+                {/* Field Map Visualization (4x4 Grid) */}
+                <div className="lg:col-span-2 glass rounded-[2.5rem] p-8 border border-border/50">
+                    <div className="flex justify-between items-center mb-10">
+                        <div>
+                            <h3 className="text-xl font-black flex items-center gap-3">
+                                <Activity className="w-6 h-6 text-primary" />
+                                Strategic Field Map
+                            </h3>
+                            <p className="text-sm text-muted">A bird's-eye view of your farm health across all zones.</p>
+                        </div>
+                    </div>
+
+                    <div className="relative p-6">
+                        {/* Axes Labels */}
+                        <div className="absolute top-0 left-12 right-0 flex justify-around text-[10px] font-black text-muted uppercase tracking-widest pb-4">
+                            <span>Sector 1</span>
+                            <span>Sector 2</span>
+                            <span>Sector 3</span>
+                            <span>Sector 4</span>
+                        </div>
+                        <div className="absolute top-12 left-0 bottom-0 flex flex-col justify-around text-[10px] font-black text-muted uppercase tracking-widest pr-4">
+                            <span>Row A</span>
+                            <span>Row B</span>
+                            <span>Row C</span>
+                            <span>Row D</span>
+                        </div>
+
+                        {/* 20x20 Grid Container */}
+                        <div className="ml-12 mt-4 relative aspect-square max-w-lg mx-auto bg-black/20 rounded-3xl overflow-hidden border border-white/5 p-1">
+                            {/* Sector Overlays (A1-D4) */}
+                            <div className="absolute inset-0 grid grid-cols-4 grid-rows-4 pointer-events-none z-20">
+                                {Array.from({ length: 16 }).map((_, i) => {
+                                    const row = ['A', 'B', 'C', 'D'][Math.floor(i / 4)];
+                                    const col = (i % 4) + 1;
+                                    return (
+                                        <div key={i} className="border border-white/10 flex items-start p-2">
+                                            <span className="text-[10px] font-black text-white/40 bg-black/40 px-1.5 py-0.5 rounded-md backdrop-blur-sm">
+                                                {row}{col}
+                                            </span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Raw 20x20 Data Grid */}
+                            <div className="grid grid-cols-20 gap-0.5 h-full w-full">
+                                {reports.length > 0 && (reports[reports.length - 1].ndvi?.grid || Array(400).fill(null)).map((val: number | null, i: number) => (
+                                    <motion.div
+                                        key={i}
+                                        initial={{ opacity: 0, scale: 0 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        transition={{ delay: (i % 20) * 0.01 + Math.floor(i / 20) * 0.01 }}
+                                        className={`w-full h-full rounded-[1px] relative cursor-crosshair transition-all duration-300 hover:scale-150 hover:z-30 hover:rounded-sm shadow-sm
+                                            ${val === null ? 'bg-white/5' : val > 0.6 ? 'bg-primary' : val > 0.3 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                                    >
+                                        {/* Precision Hover Tooltip */}
+                                        <div className="absolute inset-0 opacity-0 hover:opacity-100 bg-white/20 z-10" />
+                                        {val !== null && (
+                                            <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-50">
+                                                <div className="bg-black/90 border border-white/20 px-2 py-1 rounded-lg backdrop-blur-md">
+                                                    <p className="text-[8px] font-black text-white whitespace-nowrap">VAL: {(val * 100).toFixed(1)}%</p>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </motion.div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Interactive Legend */}
+                        <div className="mt-8 flex justify-center gap-8">
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded-full bg-primary shadow-[0_0_10px_rgba(var(--primary-rgb),0.5)]" />
+                                <span className="text-[10px] font-black text-muted uppercase">Healthy (Full Yield)</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded-full bg-yellow-500" />
+                                <span className="text-[10px] font-black text-muted uppercase">Struggling (Intervene)</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
+                                <span className="text-[10px] font-black text-muted uppercase">Critical (Alert)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Visual Trend Analysis (Full Width Now) */}
+            <div className="glass rounded-[2.5rem] p-8 border border-border/50">
+                <div className="flex justify-between items-center mb-10">
+                    <div>
+                        <h3 className="text-xl font-black flex items-center gap-3">
+                            <BarChart3 className="w-6 h-6 text-primary" />
+                            Seasonal Progress
+                        </h3>
+                        <p className="text-sm text-muted">Monitor how your farm's average health evolves over the season.</p>
+                    </div>
+                </div>
+
+                <div className="h-48 flex items-end justify-between gap-4 px-4 relative">
+                    <div className="absolute left-0 right-0 top-1/2 border-t border-white/5 z-0" />
+
+                    {reports.length === 0 ? (
+                        <div className="w-full text-center text-muted font-bold">Awaiting historical data...</div>
+                    ) : (
+                        reports.map((report, i) => {
+                            const val = report.ndvi?.stats?.mean || 0;
+                            const heightPct = Math.min(Math.max((val / 1) * 100, 10), 100);
+
+                            return (
+                                <div key={report._id} className="flex-1 group relative flex flex-col justify-end h-full z-10">
+                                    <motion.div
+                                        initial={{ height: 0 }}
+                                        animate={{ height: `${heightPct}%` }}
+                                        transition={{ duration: 1, ease: [0.33, 1, 0.68, 1], delay: i * 0.05 }}
+                                        className={`rounded-t-xl transition-all relative group-hover:shadow-[0_0_20px_rgba(var(--primary-rgb),0.3)] ${val > 0.6 ? 'bg-primary' : val > 0.3 ? 'bg-yellow-500' : 'bg-red-500'
+                                            }`}
+                                    />
+                                    <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all">
+                                        <span className="text-[10px] font-black whitespace-nowrap bg-card border border-border px-2 py-1 rounded-lg">
+                                            {formatDate(report.processedDate)}
+                                        </span>
+                                    </div>
+                                </div>
+                            );
+                        })
+                    )}
+                </div>
             </div>
 
             {/* Bottom Grid for Detailed Metrics */}
@@ -221,7 +304,7 @@ export default function AnalyticsPage() {
                         <span className="font-black text-lg">Weak Spots</span>
                     </div>
                     <p className="text-4xl font-black">{stats.criticalZones}</p>
-                    <p className="text-sm text-muted font-medium mt-2">Reports where plants were struggling</p>
+                    <p className="text-sm text-muted font-medium mt-2">Small areas that need attention right now</p>
                 </div>
 
                 <div className="p-8 glass rounded-[2.5rem] border border-border/50">
@@ -229,8 +312,8 @@ export default function AnalyticsPage() {
                         <Leaf className="w-6 h-6 text-green-400" />
                         <span className="font-black text-lg">Steady Field</span>
                     </div>
-                    <p className="text-4xl font-black">{((1 - (stats.criticalZones / (reports.length || 1))) * 100).toFixed(0)}%</p>
-                    <p className="text-sm text-muted font-medium mt-2">How much of your field is growing well</p>
+                    <p className="text-4xl font-black">{reports.length > 0 ? (100 - (stats.criticalZones / (reports[reports.length - 1].ndvi?.grid?.filter((v: any) => v !== null).length || 1)) * 100).toFixed(0) : 0}%</p>
+                    <p className="text-sm text-muted font-medium mt-2">How much of your field is growing strong</p>
                 </div>
 
                 <div className="p-8 glass rounded-[2.5rem] bg-primary group hover:bg-primary/90 transition-all cursor-pointer">

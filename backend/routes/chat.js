@@ -2,36 +2,71 @@ const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const authenticateToken = require('../middleware/auth');
+const VegetationReport = require('../models/VegetationReport');
+const Alert = require('../models/Alert');
+const Farm = require('../models/Farm');
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-router.post('/', async (req, res) => {
+router.post('/', authenticateToken, async (req, res) => {
     const { message } = req.body;
     if (!message) {
         return res.status(400).json({ error: 'Message is required' });
     }
 
+    // Fetch Live Context
+    let liveContext = "No specific farm data found yet.";
+    try {
+        // We fetch reports for the user, and all farms/alerts for now 
+        // as farms don't have explicit owner field in schema yet
+        const [latestReport, activeAlerts, userFarms] = await Promise.all([
+            VegetationReport.findOne({ userId: req.user.id }).sort({ processedDate: -1 }),
+            Alert.find({ status: 'NEW' }).sort({ createdAt: -1 }).limit(5),
+            Farm.find().limit(5)
+        ]);
+
+        if (latestReport) {
+            liveContext = `
+            Latest Field Scan (${new Date(latestReport.processedDate).toLocaleDateString()}):
+            - Health Score: ${latestReport.aiInsights?.healthScore}%
+            - Overall Summary: ${latestReport.aiInsights?.summary}
+            - Specific Zones to watch: ${latestReport.aiInsights?.focusAreas?.join(', ') || 'None'}
+            - Top Recommendations: ${latestReport.aiInsights?.recommendations?.slice(0, 3).join('; ')}
+            `;
+        } else {
+            liveContext = "No vegetation scans found for your account.";
+        }
+
+        if (activeAlerts && activeAlerts.length > 0) {
+            liveContext += `\nRecent Alerts:\n${activeAlerts.map(a => `- ${a.severity}: ${a.title} (${a.description})`).join('\n')}`;
+        }
+
+        if (userFarms && userFarms.length > 0) {
+            liveContext += `\nRegistered Farms: ${userFarms.map(f => f.name).join(', ')}`;
+        }
+    } catch (dataErr) {
+        console.error("Error fetching live context for AI:", dataErr);
+    }
+
     const systemPrompt = `You are the Sky Scouts AI, a precision agriculture assistant. 
     Your goal is to help farmers monitor crop health, analyze NDVI maps, and manage drone missions.
     Be helpful, technical yet accessible, and professional. 
-    If asked about farm health, suggest checking NDVI maps.
-    If asked about drones, mention flight stability and coverage.
+
+    LIVE FARM DATA (STRICTLY use this to answer questions about the farm):
+    ${liveContext}
     
     Keep responses concise and action-oriented.
-    clearly tell in step by step instructions if needed.
+    Clearly tell in step by step instructions if needed.
+    If the user asks about "my farm" or "my health", refer to the LIVE FARM DATA above.
+    If no data is present, politely ask the user to upload a scan.
     
     Language rules: 
-    Use simple, human like natural language, butifully crafed for easy readibility and understadinig, dont throw robotic garbage.
+    Use simple, human like natural language, beautifully crafted for easy readability and understanding, don't throw robotic garbage.
 
-    response in same language as aksed for example:
-    question: update my profile.
-    Answer: To update you profile, to this, this and this.
-
-    if Question is: PRofile kaise update karen?
-    then answer: Pahle apko yaha jana hai fir yaha fir yahan, aur apka kaam hogya!!!
-
-    Use emojis to beutiful looking reponses.`;
+    Response in same language as asked (e.g., Hinglish if asked in Hinglish).
+    Use emojis to make responses look beautiful.`;
 
     const prompt = `${systemPrompt}\n\nUser: ${message}\nSky Scout AI:`;
 

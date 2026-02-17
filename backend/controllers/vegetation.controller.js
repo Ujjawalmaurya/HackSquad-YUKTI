@@ -64,7 +64,7 @@ async function processSingleFile(file, userId, farmId) {
         };
 
         try {
-            aiInsights = await generateFarmAnalysis(allStats);
+            aiInsights = await generateFarmAnalysis(allStats, ndviGrid);
         } catch (aiError) {
             console.error("Gemini Analysis Failed (Non-blocking):", aiError.message);
         }

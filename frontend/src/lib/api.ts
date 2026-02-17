@@ -66,7 +66,7 @@ export const analyzeFarmImage = async (farmId: string, imageFile: File) => {
 export const chatWithAI = async (message: string) => {
     const response = await fetch(`${API_BASE_URL}/chat`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHeaders(),
         body: JSON.stringify({ message }),
     });
     if (!response.ok) throw new Error('Chat failed');
